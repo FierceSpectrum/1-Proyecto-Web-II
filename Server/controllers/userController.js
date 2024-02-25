@@ -1,5 +1,5 @@
 const User = require("../models/userModel");
-
+const Playlist = require("../models/playlistModel");
 /**
  * Creates a user
  *
@@ -9,24 +9,48 @@ const User = require("../models/userModel");
 const userPost = async (req, res) => {
     let user = new User();
 
+    const fechaCompleta = new Date(req.body.birthdate);
+    const año = fechaCompleta.getFullYear();
+    const mes = fechaCompleta.getMonth();
+    const dia = fechaCompleta.getDate();
+    const dateOnly = new Date(año, mes, dia);
+
     user.email = req.body.email;
     user.password = req.body.password;
     user.pin = req.body.pin;
     user.name = req.body.name;
     user.last_name = req.body.last_name;
     user.country = req.body.country;
-    user.birthdate = req.body.birthdate;
+    user.birthdate = dateOnly;
     user.accounts = 6;
     user.playlists = 1;
     user.state = true;
 
+
+    // valida el pin
+    const validpin = req.body.pin.toString().length == 6;
+
+    // valida la edad
     const today = new Date();
-    const age = today.getFullYear() - user.birthdate.getFullYear();
+    const birthdate = new Date(user.birthdate);
+    let age = today.getFullYear() - birthdate.getFullYear();
 
     const operador = (today.getMonth() < birthdate.getMonth() || (today.getMonth() === birthdate.getMonth() && today.getDate() < birthdate.getDate()))
-    age -= operador ? 1 : 0
+    age -= operador ? 1 : 0;
+    age = age >= 18;
 
-    if (age >= 18 && user.email) {
+    // valida el email
+
+    const validarEmail = (email) => {
+        // Expresión regular para validar un correo electrónico
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+
+    const validemail = validarEmail(user.email);
+    const usedemail = !await User.findOne({ email: user.email });
+
+    if (age && validemail && usedemail && validpin ) {
         await user.save()
             .then(data => {
                 res.status(201); // CREATED
@@ -49,6 +73,7 @@ const userPost = async (req, res) => {
             error: 'No valid data provided for user'
         });
     }
+
 };
 
 /**

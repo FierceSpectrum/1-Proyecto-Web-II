@@ -1,4 +1,7 @@
 const Playlist = require("../models/playlistModel");
+const Video = require("../models/videoModel");
+const User = require("../models/userModel");
+
 
 /**
  * Creates a playlist
@@ -6,23 +9,93 @@ const Playlist = require("../models/playlistModel");
  * @param {*} req
  * @param {*} res
  */
+
+function verificarURLdeVideo(url) {
+    const regex = /^(?:(?:https?:)?\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    return regex.test(url);
+}
+
 const playlistPost = async (req, res) => {
-    let playlist = new Playlist(req.body);
-    await playlist.save()
-        .then(data => {
-            res.status(201); // CREATED
-            res.header({
-                'location': `/api/playlists/?id=${data.id}`
+    const playlist = new Playlist();
+    const video = new Video();
+
+    playlist.user = req.body.user;
+    video.name = req.body.name;
+    video.url = req.body.url;
+    playlist.state = true;
+
+    playlist.playlist = video;
+
+    const usedemail = !await Playlist.findOne({ user: req.body.user });
+    console.log(usedemail)
+    const verificarurl = verificarURLdeVideo(req.body.url);
+    console.log(verificarurl)
+
+    if (usedemail && verificarurl) {
+        await playlist.save()
+            .then(data => {
+                res.status(201); // CREATED
+                res.header({
+                    'location': `/api/playlists/?id=${data.id}`
+                });
+                res.json(data);
+            })
+            .catch(err => {
+                res.status(422);
+                console.log('error while saving the playlist', err);
+                res.json({
+                    error: 'There was an error saving the playlist'
+                });
             });
-            res.json(data);
-        })
-        .catch(err => {
-            res.status(422);
-            console.log('error while saving the playlist', err);
-            res.json({
-                error: 'There was an error saving the playlist'
-            });
+    } else {
+        res.status(422);
+        console.log('error while saving the user')
+        res.json({
+            error: 'No valid data provided for user'
         });
+    }
+};
+
+const videoPost = async (req, res) => {
+    const video = new Video();
+
+    video.name = req.body.name;
+    video.url = req.body.url;
+
+    try {
+        // Encuentra la playlist del usuario por su ID
+        const playlist = await Playlist.findOne({ user: req.body.user })
+
+        if (!playlist) {
+            res.status(404);
+            res.json({ error: 'User playlist not found' });
+            return;
+        }
+
+        // Agrega un nuevo video a la playlist del usuario
+        playlist.playlist.push(video);
+
+        // Guarda los cambios en el usuario
+        await playlist.save()
+            .then(data => {
+                res.status(201); // CREATED
+                res.header({
+                    'location': `/api/playlists/?id=${data.id}`
+                });
+                res.json(data);
+            })
+            .catch(err => {
+                res.status(422);
+                console.log('error while saving the playlist', err);
+                res.json({
+                    error: 'There was an error saving the playlist'
+                });
+            });
+
+    } catch (error) {
+        console.error('Error while saving the playlist:', error);
+        res.status(500).json({ error: 'There was an error saving the playlist' });
+    }
 };
 
 /**
@@ -73,8 +146,8 @@ const playlistPatch = (req, res) => {
             }
 
             // update the playlist object (patch)
-            playlist.title = req.body.title ? req.body.title : playlist.title;
-            playlist.detail = req.body.detail ? req.body.detail : playlist.detail;
+            // playlist.title = req.body.title ? req.body.title : playlist.title;
+            // playlist.detail = req.body.detail ? req.body.detail : playlist.detail;
             // update the playlist object (put)
             // playlist.title = req.body.title
             // playlist.detail = req.body.detail
@@ -135,5 +208,6 @@ module.exports = {
     playlistGet,
     playlistPost,
     playlistPatch,
-    playlistDelete
+    playlistDelete,
+    videoPost
 }

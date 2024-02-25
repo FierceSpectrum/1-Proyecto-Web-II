@@ -19,7 +19,8 @@ const {
   playlistPatch,
   playlistPost,
   playlistGet,
-  playlistDelete
+  playlistDelete,
+  videoPost
 } = require("./controllers/playlistController.js");
 
 const {
@@ -56,6 +57,7 @@ app.post("/api/playlists", playlistPost);
 app.patch("/api/playlists", playlistPatch);
 app.put("/api/playlists", playlistPatch);
 app.delete("/api/playlists", playlistDelete);
+app.post("/api/video", videoPost);
 
 // account
 app.get("/api/accounts", accountGet);

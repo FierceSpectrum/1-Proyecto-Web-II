@@ -1,4 +1,7 @@
 const Account = require("../models/accountModel");
+const User = require("../models/userModel");
+
+
 
 /**
  * Creates a account
@@ -7,16 +10,20 @@ const Account = require("../models/accountModel");
  * @param {*} res
  */
 const accountPost = async (req, res) => {
-    let account = new Account(req.body);
-    /* let account = new Account();
+    //let account = new Account(req.body);
+    let account = new Account();
 
     account.full_name = req.body.full_name;
     account.pin = req.body.pin;
     account.avatar = req.body.avatar;
     account.age = req.body.age;
-    account.user = req.body.user; */
+    account.user = req.body.user;
+    account.state = true;
 
-    if (account.name && account.code) {
+    const validuser = !!await User.findById(req.body.user);
+    const validpin = req.body.pin.toString().length == 6;
+
+    if (validpin && validuser) {
         await account.save()
             .then(data => {
                 res.status(201); // CREATED
