@@ -1,13 +1,22 @@
 const User = require("../models/userModel");
-const Playlist = require("../models/playlistModel");
+
+
+const validarEmail = (email) => {
+    // Expresión regular para validar un correo electrónico
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+}
+
 /**
  * Creates a user
  *
  * @param {*} req
  * @param {*} res
  */
+
+
 const userPost = async (req, res) => {
-    let user = new User();
+    const user = new User();
 
     const fechaCompleta = new Date(req.body.birthdate);
     const año = fechaCompleta.getFullYear();
@@ -33,24 +42,18 @@ const userPost = async (req, res) => {
     // valida la edad
     const today = new Date();
     const birthdate = new Date(user.birthdate);
-    let age = today.getFullYear() - birthdate.getFullYear();
 
     const operador = (today.getMonth() < birthdate.getMonth() || (today.getMonth() === birthdate.getMonth() && today.getDate() < birthdate.getDate()))
-    age -= operador ? 1 : 0;
-    age = age >= 18;
+    const age = 18 <= (today.getFullYear() - birthdate.getFullYear() - (operador ? 1 : 0));
 
     // valida el email
 
-    const validarEmail = (email) => {
-        // Expresión regular para validar un correo electrónico
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return regex.test(email);
-    }
+
 
     const validemail = validarEmail(user.email);
     const usedemail = !await User.findOne({ email: user.email });
 
-    if (age && validemail && usedemail && validpin ) {
+    if (age && validemail && usedemail && validpin) {
         await user.save()
             .then(data => {
                 res.status(201); // CREATED
@@ -87,7 +90,14 @@ const userGet = (req, res) => {
     if (req.query && req.query.id) {
         User.findById(req.query.id)
             .then((user) => {
-                res.json(user);
+                if (user.state) {
+                    res.json(user);
+                }
+                else {
+                    res.status(404);
+                    console.log('error while queryting the user', err)
+                    res.json({ error: "User doesnt exist" })
+                }
             })
             .catch(err => {
                 res.status(404);
@@ -98,38 +108,8 @@ const userGet = (req, res) => {
         // get all users
         User.find()
             .then(users => {
-                res.json(users);
-            })
-            .catch(err => {
-                res.status(422);
-                res.json({ "error": err });
-            });
-    }
-};
-
-/**
- * Get email users
- *
- * @param {*} req
- * @param {*} res
- */
-const user_emailGet = (req, res) => {
-    // if an specific user is required
-    if (req.query && req.query.id) {
-        User.findById(req.query.id)
-            .then((user) => {
-                res.json(user);
-            })
-            .catch(err => {
-                res.status(404);
-                console.log('error while queryting the user', err)
-                res.json({ error: "User doesnt exist" })
-            });
-    } else {
-        // get all users
-        User.find()
-            .then(users => {
-                res.json(users);
+                const usersfilter = users.filter(user => user.state)
+                res.json(usersfilter);
             })
             .catch(err => {
                 res.status(422);
@@ -147,32 +127,60 @@ const user_emailGet = (req, res) => {
 const userPatch = (req, res) => {
     // get user by id
     if (req.query && req.query.id) {
-        User.findById(req.query.id, function (err, user) {
-            if (err) {
+        User.findById(req.query.id)
+            .then((user) => {
+                if (!user.state) {
+                    res.status(404);
+                    console.log('error while queryting the user', err)
+                    res.json({ error: "User doesnt exist" })
+                }
+
+                const validpin = req.body.pin.toString().length == 6;
+                if (!validpin) {
+                    res.status(422);
+                    console.log('error saving pin', err)
+                    res.json({
+                        error: 'There was an error saving the pin'
+                    });
+                }
+
+                const operador = (today.getMonth() < birthdate.getMonth() || (today.getMonth() === birthdate.getMonth() && today.getDate() < birthdate.getDate()))
+                const age = 18 <= (today.getFullYear() - birthdate.getFullYear() - (operador ? 1 : 0));
+                if (!age) {
+                    res.status(422);
+                    console.log('error saving pin', err)
+                    res.json({
+                        error: 'There was an error saving the pin'
+                    });
+                }
+
+                user.password = req.body.password ? req.body.password : user.password;
+                user.pin = req.body.pin ? req.body.pin : user.pin;
+                user.name = req.body.name ? req.body.name : user.name;
+                user.last_name = req.body.last_name ? req.body.last_name : user.last_name;
+                user.country = req.body.country ? req.body.country : user.country;
+                user.birthdate = req.body.birthdate ? req.body.birthdate : user.birthdate;
+                user.accounts = req.body.accounts ? req.body.accounts : user.accounts;
+                user.playlists = req.body.playlists ? req.body.playlists : user.playlists;
+
+                user.save()
+                    .then((user) => {
+                        res.status(200); // OK
+                        res.json(user);
+                    })
+                    .catch(err => {
+                        res.status(422);
+                        console.log('error while saving the user', err)
+                        res.json({
+                            error: 'There was an error saving the user'
+                        });
+                    });
+            })
+            .catch(err => {
                 res.status(404);
                 console.log('error while queryting the user', err)
                 res.json({ error: "User doesnt exist" })
-            }
-
-            // update the user object (patch)
-            user.title = req.body.title ? req.body.title : user.title;
-            user.detail = req.body.detail ? req.body.detail : user.detail;
-            // update the user object (put)
-            // user.title = req.body.title
-            // user.detail = req.body.detail
-
-            user.save(function (err) {
-                if (err) {
-                    res.status(422);
-                    console.log('error while saving the user', err)
-                    res.json({
-                        error: 'There was an error saving the user'
-                    });
-                }
-                res.status(200); // OK
-                res.json(user);
             });
-        });
     } else {
         res.status(404);
         res.json({ error: "User doesnt exist" })
@@ -188,25 +196,34 @@ const userPatch = (req, res) => {
 const userDelete = (req, res) => {
     // get user by id
     if (req.query && req.query.id) {
-        User.findById(req.query.id, function (err, user) {
-            if (err) {
+        User.findById(req.query.id)
+            .then((user) => {
+                if (!user.state) {
+                    res.status(404);
+                    console.log('error while queryting the user', err)
+                    res.json({ error: "User doesnt exist" })
+                }
+                
+                user.state = false;
+
+                user.save()
+                    .then(() => {
+                        res.status(204); //No content
+                        res.json({});
+                    })
+                    .catch(err => {
+                        res.status(422);
+                        console.log('error while deleting the user', err)
+                        res.json({
+                            error: 'There was an error deleting the user'
+                        });
+                    });
+            })
+            .catch(err => {
                 res.status(404);
                 console.log('error while queryting the user', err)
                 res.json({ error: "User doesnt exist" })
-            }
-
-            user.deleteOne(function (err) {
-                if (err) {
-                    res.status(422);
-                    console.log('error while deleting the user', err)
-                    res.json({
-                        error: 'There was an error deleting the user'
-                    });
-                }
-                res.status(204); //No content
-                res.json({});
             });
-        });
     } else {
         res.status(404);
         res.json({ error: "user doesnt exist" })

@@ -1,6 +1,5 @@
 const Playlist = require("../models/playlistModel");
 const Video = require("../models/videoModel");
-const User = require("../models/userModel");
 
 
 /**
@@ -56,48 +55,6 @@ const playlistPost = async (req, res) => {
     }
 };
 
-const videoPost = async (req, res) => {
-    const video = new Video();
-
-    video.name = req.body.name;
-    video.url = req.body.url;
-
-    try {
-        // Encuentra la playlist del usuario por su ID
-        const playlist = await Playlist.findOne({ user: req.body.user })
-
-        if (!playlist) {
-            res.status(404);
-            res.json({ error: 'User playlist not found' });
-            return;
-        }
-
-        // Agrega un nuevo video a la playlist del usuario
-        playlist.playlist.push(video);
-
-        // Guarda los cambios en el usuario
-        await playlist.save()
-            .then(data => {
-                res.status(201); // CREATED
-                res.header({
-                    'location': `/api/playlists/?id=${data.id}`
-                });
-                res.json(data);
-            })
-            .catch(err => {
-                res.status(422);
-                console.log('error while saving the playlist', err);
-                res.json({
-                    error: 'There was an error saving the playlist'
-                });
-            });
-
-    } catch (error) {
-        console.error('Error while saving the playlist:', error);
-        res.status(500).json({ error: 'There was an error saving the playlist' });
-    }
-};
-
 /**
  * Get all playlists
  *
@@ -109,7 +66,14 @@ const playlistGet = (req, res) => {
     if (req.query && req.query.id) {
         Playlist.findById(req.query.id)
             .then((playlist) => {
-                res.json(playlist);
+                if (playlist.state) {
+                    res.json(playlist);
+                }
+                else {
+                    res.status(404);
+                    console.log('error while queryting the playlist', err)
+                    res.json({ error: "Playlist doesnt exist" })
+                }
             })
             .catch(err => {
                 res.status(404);
@@ -120,7 +84,8 @@ const playlistGet = (req, res) => {
         // get all playlists
         Playlist.find()
             .then(playlists => {
-                res.json(playlists);
+                const playlistsfilter = playlist.filter(playlist => playlist.state)
+                res.json(playlistsfilter);
             })
             .catch(err => {
                 res.status(422);
@@ -129,13 +94,14 @@ const playlistGet = (req, res) => {
     }
 };
 
-/**
+/* *
  * Updates a playlist
  *
  * @param {*} req
  * @param {*} res
  */
-const playlistPatch = (req, res) => {
+
+/* const playlistPatch = (req, res) => {
     // get playlist by id
     if (req.query && req.query.id) {
         Playlist.findById(req.query.id, function (err, playlist) {
@@ -168,7 +134,7 @@ const playlistPatch = (req, res) => {
         res.status(404);
         res.json({ error: "Playlist doesnt exist" })
     }
-};
+}; */
 
 /**
  * Deletes a playlist
@@ -179,25 +145,30 @@ const playlistPatch = (req, res) => {
 const playlistDelete = (req, res) => {
     // get playlist by id
     if (req.query && req.query.id) {
-        Playlist.findById(req.query.id, function (err, playlist) {
-            if (err) {
+        Playlist.findById(req.query.id)
+            .then((playlist) => {
+                if (!playlist.state) {
+                    res.status(404);
+                    console.log('error while queryting the playlist', err)
+                    res.json({ error: "Playlist doesnt exist" })
+                }
+                playlist.state = false;
+                playlist.save()
+                    .then(() => {
+                        res.status(204); //No content
+                        res.json({});
+                    })
+                    .catch(err => {
+                        res.status(422);
+                        console.log('error while deleting the playlist', err)
+                        res.json({ error: 'There was an error deleting the playlist' });
+                    });
+            })
+            .catch(err => {
                 res.status(404);
                 console.log('error while queryting the playlist', err)
                 res.json({ error: "Playlist doesnt exist" })
-            }
-
-            playlist.deleteOne(function (err) {
-                if (err) {
-                    res.status(422);
-                    console.log('error while deleting the playlist', err)
-                    res.json({
-                        error: 'There was an error deleting the playlist'
-                    });
-                }
-                res.status(204); //No content
-                res.json({});
             });
-        });
     } else {
         res.status(404);
         res.json({ error: "Playlist doesnt exist" })
@@ -207,7 +178,6 @@ const playlistDelete = (req, res) => {
 module.exports = {
     playlistGet,
     playlistPost,
-    playlistPatch,
-    playlistDelete,
-    videoPost
+    // playlistPatch,
+    playlistDelete
 }

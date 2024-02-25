@@ -17,11 +17,17 @@ const {
 
 const {
   playlistPatch,
-  playlistPost,
+  // playlistPost,
   playlistGet,
-  playlistDelete,
-  videoPost
+  playlistDelete
 } = require("./controllers/playlistController.js");
+
+const {
+  videoPatch,
+  videoPost,
+  videoGet,
+  videoDelete
+} = require("./controllers/videoController.js");
 
 const {
   accountPatch,
@@ -54,10 +60,16 @@ app.delete("/api/users", userDelete);
 // playlist
 app.get("/api/playlists", playlistGet);
 app.post("/api/playlists", playlistPost);
-app.patch("/api/playlists", playlistPatch);
-app.put("/api/playlists", playlistPatch);
+// app.patch("/api/playlists", playlistPatch);
+// app.put("/api/playlists", playlistPatch);
 app.delete("/api/playlists", playlistDelete);
-app.post("/api/video", videoPost);
+
+// video
+app.get("/api/videos", videoGet);
+app.post("/api/videos", videoPost);
+app.patch("/api/videos", videoPatch);
+app.put("/api/videos", videoPatch);
+app.delete("/api/videos", videoDelete);
 
 // account
 app.get("/api/accounts", accountGet);

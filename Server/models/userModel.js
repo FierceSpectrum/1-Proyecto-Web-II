@@ -11,6 +11,7 @@ const user = new Schema({
     birthdate: { type: String },
     accounts: { type: Number },
     playlists: { type: Number },
+    account: [],
     state: { type: Boolean }
 });
 

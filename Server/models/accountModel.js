@@ -6,10 +6,6 @@ const accounts = new Schema({
     pin: { type: Number },
     avatar: { type: String },
     age: { type: Number },
-    user: {
-        type: mongoose.ObjectId,
-        ref: 'User'
-    },
     state: { type: Boolean }
 });
 
