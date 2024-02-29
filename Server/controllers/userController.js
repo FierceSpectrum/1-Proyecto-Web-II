@@ -1,11 +1,10 @@
 const User = require("../models/userModel");
 
-
 const validarEmail = (email) => {
-    // Expresión regular para validar un correo electrónico
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-}
+  // Expresión regular para validar un correo electrónico
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+};
 
 /**
  * Creates a user
@@ -14,70 +13,81 @@ const validarEmail = (email) => {
  * @param {*} res
  */
 
-
 const userPost = async (req, res) => {
-    const user = new User();
+  const user = new User();
 
-    const fechaCompleta = new Date(req.body.birthdate);
-    const año = fechaCompleta.getFullYear();
-    const mes = fechaCompleta.getMonth();
-    const dia = fechaCompleta.getDate();
-    const dateOnly = new Date(año, mes, dia);
+  try {
+    // Iterar sobre los campos que deseas validar
+    ["password", "name", "last_name", "country"].forEach((field) => {
+      if (!req.body[field] || req.body[field].trim() === "") {
+        throw new Error(
+          `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+        );
+      }
+    });
 
+    // Validar formato de correo electrónico
+    const validemail = validarEmail(req.body.email);
+    if (!validemail) {
+      throw new Error("Invalid email format");
+    }
+
+    // Validar longitud del pin
+    const validpin = req.body.pin.toString().length == 6;
+    if (!validpin) {
+      throw new Error("Pin must be a 6-digit number");
+    }
+
+    // Validar edad mínima de 18 años
+    const birthdate = new Date(req.body.birthdate);
+    if (isNaN(birthdate) || calculateAge(birthdate) < 18) {
+      throw new Error("User must be at least 18 years old");
+    }
+
+    // Verificar si el correo electrónico ya está en uso
+    const usedemail = await User.findOne({email: req.body.email});
+    if (usedemail) {
+      throw new Error("Email is already in use");
+    }
+
+    // Asignar valores al usuario
     user.email = req.body.email;
     user.password = req.body.password;
     user.pin = req.body.pin;
     user.name = req.body.name;
     user.last_name = req.body.last_name;
     user.country = req.body.country;
-    user.birthdate = dateOnly;
+    user.birthdate = req.body.dateOnly;
     user.accounts = 6;
     user.playlists = 1;
     user.state = true;
 
-
-    // valida el pin
-    const validpin = req.body.pin.toString().length == 6;
-
-    // valida la edad
-    const today = new Date();
-    const birthdate = new Date(user.birthdate);
-
-    const operador = (today.getMonth() < birthdate.getMonth() || (today.getMonth() === birthdate.getMonth() && today.getDate() < birthdate.getDate()))
-    const age = 18 <= (today.getFullYear() - birthdate.getFullYear() - (operador ? 1 : 0));
-
-    // valida el email
-
-
-
-    const validemail = validarEmail(user.email);
-    const usedemail = !await User.findOne({ email: user.email });
-
-    if (age && validemail && usedemail && validpin) {
-        await user.save()
-            .then(data => {
-                res.status(201); // CREATED
-                res.header({
-                    'location': `/api/users/?id=${data.id}`
-                });
-                res.json(data);
-            })
-            .catch(err => {
-                res.status(422);
-                console.log('error while saving the user', err);
-                res.json({
-                    error: 'There was an error saving the user'
-                });
-            });
-    } else {
-        res.status(422);
-        console.log('error while saving the user')
-        res.json({
-            error: 'No valid data provided for user'
-        });
-    }
-
+    // Guardar usuario en la base de datos
+    await user
+      .save()
+      .then((data) => {
+        res.status(201); // CREATED
+        res.header({location: `/api/users/?id=${data.id}`});
+        res.json(data);
+      })
+      .catch((err) => {
+        res.status(400);
+        console.log("error while saving the user", err);
+        res.json({error: error.message});
+      });
+  } catch (error) {
+    res.status(400);
+    res.json({error: error.message});
+    return;
+  }
 };
+
+// Función para calcular la edad
+function calculateAge(birthdate) {
+  const today = new Date();
+  const diff = today - birthdate;
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+}
 
 /**
  * Get all users
@@ -86,36 +96,37 @@ const userPost = async (req, res) => {
  * @param {*} res
  */
 const userGet = (req, res) => {
-    // if an specific user is required
-    if (req.query && req.query.id) {
-        User.findById(req.query.id)
-            .then((user) => {
-                if (user.state) {
-                    res.json(user);
-                }
-                else {
-                    res.status(404);
-                    console.log('error while queryting the user', err)
-                    res.json({ error: "User doesnt exist" })
-                }
-            })
-            .catch(err => {
-                res.status(404);
-                console.log('error while queryting the user', err)
-                res.json({ error: "User doesnt exist" })
-            });
-    } else {
-        // get all users
-        User.find()
-            .then(users => {
-                const usersfilter = users.filter(user => user.state)
-                res.json(usersfilter);
-            })
-            .catch(err => {
-                res.status(422);
-                res.json({ "error": err });
-            });
-    }
+  // Si se requiere un usuario específico
+  if (req.query && req.query.id) {
+    // Encuentra al usuario por su ID
+    User.findById(req.query.id)
+      .then((user) => {
+        // Valida si el usuario esta activo
+        if (!user.state) {
+          res.status(404);
+          res.json({error: "User not found"});
+          return;
+        }
+        res.status(200);
+        res.json(user);
+      })
+      .catch((err) => {
+        res.status(500);
+        res.json({error: "Internal server error"});
+      });
+  } else {
+    // Obtener todos los usuarios activos
+    User.find({state: true})
+      .then((users) => {
+        // const usersfilter = users.filter(user => user.state)
+        res.status(200);
+        res.json(users);
+      })
+      .catch((err) => {
+        res.status(500);
+        res.json({"Internal server error": err});
+      });
+  }
 };
 
 /**
@@ -125,66 +136,102 @@ const userGet = (req, res) => {
  * @param {*} res
  */
 const userPatch = (req, res) => {
-    // get user by id
-    if (req.query && req.query.id) {
-        User.findById(req.query.id)
-            .then((user) => {
-                if (!user.state) {
-                    res.status(404);
-                    console.log('error while queryting the user', err)
-                    res.json({ error: "User doesnt exist" })
-                }
+  // Verifica si se proporciona un ID de usuario en la consulta
+  if (req.query && req.query.id) {
+    // Busca el usuario por ID
+    User.findById(req.query.id)
+      .then((user) => {
+        if (!user.state) {
+          res.status(404);
+          res.json({error: "User not found"});
+          return;
+        }
 
-                const validpin = req.body.pin.toString().length == 6;
-                if (!validpin) {
-                    res.status(422);
-                    console.log('error saving pin', err)
-                    res.json({
-                        error: 'There was an error saving the pin'
-                    });
-                }
+        // Valida la longitud del pin
+        const validpin = req.body.pin.toString().length == 6;
+        if (!validpin) {
+          res.status(422);
+          res.json({
+            error: "Invalid pin format. Pin must be a 6-digit number",
+          });
+          return;
+        }
 
-                const operador = (today.getMonth() < birthdate.getMonth() || (today.getMonth() === birthdate.getMonth() && today.getDate() < birthdate.getDate()))
-                const age = 18 <= (today.getFullYear() - birthdate.getFullYear() - (operador ? 1 : 0));
-                if (!age) {
-                    res.status(422);
-                    console.log('error saving pin', err)
-                    res.json({
-                        error: 'There was an error saving the pin'
-                    });
-                }
+        // Valida la fecha de nacimiento
+        const birthdate = new Date(req.body.birthdate);
 
-                user.password = req.body.password ? req.body.password : user.password;
-                user.pin = req.body.pin ? req.body.pin : user.pin;
-                user.name = req.body.name ? req.body.name : user.name;
-                user.last_name = req.body.last_name ? req.body.last_name : user.last_name;
-                user.country = req.body.country ? req.body.country : user.country;
-                user.birthdate = req.body.birthdate ? req.body.birthdate : user.birthdate;
-                user.accounts = req.body.accounts ? req.body.accounts : user.accounts;
-                user.playlists = req.body.playlists ? req.body.playlists : user.playlists;
+        if (isNaN(birthdate)) {
+          res.status(422);
+          res.json({
+            error: "Invalid birthdate format. Please provide a valid date",
+          });
+          return;
+        }
 
-                user.save()
-                    .then((user) => {
-                        res.status(200); // OK
-                        res.json(user);
-                    })
-                    .catch(err => {
-                        res.status(422);
-                        console.log('error while saving the user', err)
-                        res.json({
-                            error: 'There was an error saving the user'
-                        });
-                    });
-            })
-            .catch(err => {
-                res.status(404);
-                console.log('error while queryting the user', err)
-                res.json({ error: "User doesnt exist" })
-            });
-    } else {
+        // Valida la edad del usuario
+        const today = new Date();
+        const operador =
+          today.getMonth() < birthdate.getMonth() ||
+          (today.getMonth() === birthdate.getMonth() &&
+            today.getDate() < birthdate.getDate());
+        const age =
+          18 <=
+          today.getFullYear() - birthdate.getFullYear() - (operador ? 1 : 0);
+        if (!age) {
+          res.status(422);
+          res.json({error: "Users must be at least 18 years old"});
+          return;
+        }
+
+        try {
+          // Iterar sobre los campos que deseas validar
+          ["password", "name", "last_name", "country"].forEach((field) => {
+            if (!req.body[field] || req.body[field].trim() === "") {
+              throw new Error(
+                `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+              );
+            }
+          });
+        } catch (error) {
+          res.status(400);
+          res.json({error: error.message});
+          return;
+        }
+
+        // Actualiza los campos del usuario
+        user.password = req.body.password ? req.body.password : user.password;
+        user.pin = req.body.pin ? req.body.pin : user.pin;
+        user.name = req.body.name ? req.body.name : user.name;
+        user.last_name = req.body.last_name
+          ? req.body.last_name
+          : user.last_name;
+        user.country = req.body.country ? req.body.country : user.country;
+        user.birthdate = req.body.birthdate ? req.body.birthdate : birthdate;
+        user.accounts = req.body.accounts ? req.body.accounts : user.accounts;
+        user.playlists = req.body.playlists
+          ? req.body.playlists
+          : user.playlists;
+
+        // Guarda los cambios del usuario
+        user
+          .save()
+          .then((updatedUser) => {
+            res.status(200); // OK
+            res.json(updatedUser);
+          })
+          .catch((err) => {
+            res.status(500);
+            res.json({error: "Internal server error"});
+          });
+      })
+      .catch((err) => {
         res.status(404);
-        res.json({ error: "User doesnt exist" })
-    }
+        res.json({error: "User not found"});
+      });
+  } else {
+    res.status(400);
+    res.json({error: "User ID is required in query parameters"});
+  }
 };
 
 /**
@@ -194,45 +241,45 @@ const userPatch = (req, res) => {
  * @param {*} res
  */
 const userDelete = (req, res) => {
-    // get user by id
-    if (req.query && req.query.id) {
-        User.findById(req.query.id)
-            .then((user) => {
-                if (!user.state) {
-                    res.status(404);
-                    console.log('error while queryting the user', err)
-                    res.json({ error: "User doesnt exist" })
-                }
-                
-                user.state = false;
+  // Verifica si se proporciona un ID de usuario en la consulta
+  if (req.query && req.query.id) {
+    // Busca el usuario por ID
+    User.findById(req.query.id)
+      .then((user) => {
+        if (!user.state) {
+          res.status(404);
+          res.json({error: "User not found"});
+          return;
+        }
 
-                user.save()
-                    .then(() => {
-                        res.status(204); //No content
-                        res.json({});
-                    })
-                    .catch(err => {
-                        res.status(422);
-                        console.log('error while deleting the user', err)
-                        res.json({
-                            error: 'There was an error deleting the user'
-                        });
-                    });
-            })
-            .catch(err => {
-                res.status(404);
-                console.log('error while queryting the user', err)
-                res.json({ error: "User doesnt exist" })
-            });
-    } else {
+        // Actualiza el estado del usuario a inactivo
+        user.state = false;
+
+        // Guarda los cambios en el usuario
+        user
+          .save()
+          .then(() => {
+            res.status(204); //No content
+            res.json({});
+          })
+          .catch((err) => {
+            res.status(500);
+            res.json({error: "Internal server error"});
+          });
+      })
+      .catch((err) => {
         res.status(404);
-        res.json({ error: "user doesnt exist" })
-    }
+        res.json({error: "User not found"});
+      });
+  } else {
+    res.status(400);
+    res.json({error: "User ID is required in query parameters"});
+  }
 };
 
 module.exports = {
-    userGet,
-    userPost,
-    userPatch,
-    userDelete
-}
+  userGet,
+  userPost,
+  userPatch,
+  userDelete,
+};

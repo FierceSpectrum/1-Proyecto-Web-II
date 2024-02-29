@@ -1,39 +1,39 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 // database connection
 const mongoose = require("mongoose");
 const db = mongoose.connect("mongodb://127.0.0.1:27017/users", {
   useNewUrlParser: true,
   useFindAndModify: false,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
 });
 
 const {
   userPatch,
   userPost,
   userGet,
-  userDelete
+  userDelete,
 } = require("./controllers/userController.js");
 
 const {
   playlistPatch,
-  // playlistPost,
+  playlistPost,
   playlistGet,
-  playlistDelete
+  playlistDelete,
 } = require("./controllers/playlistController.js");
 
 const {
   videoPatch,
   videoPost,
   videoGet,
-  videoDelete
+  videoDelete,
 } = require("./controllers/videoController.js");
 
 const {
   accountPatch,
   accountPost,
   accountGet,
-  accountDelete
+  accountDelete,
 } = require("./controllers/accountController.js");
 
 // parser for the request body (required for the POST and PUT methods)
@@ -42,11 +42,12 @@ app.use(bodyParser.json());
 
 // check for cors
 const cors = require("cors");
-app.use(cors({
-  domains: '*',
-  methods: "*"
-}));
-
+app.use(
+  cors({
+    domains: "*",
+    methods: "*",
+  })
+);
 
 // listen to the task request
 
@@ -78,4 +79,4 @@ app.patch("/api/accounts", accountPatch);
 app.put("/api/accounts", accountPatch);
 app.delete("/api/accounts", accountDelete);
 
-app.listen(3001, () => console.log(`Example app listening on port 3001!`))
+app.listen(3001, () => console.log(`Example app listening on port 3001!`));
