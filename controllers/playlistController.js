@@ -1,4 +1,5 @@
 const Playlist = require("../models/playlistModel");
+const User = require("../models/userModel");
 const Video = require("../models/videoModel");
 
 // const User = require("../models/userModel");
@@ -36,8 +37,9 @@ const playlistPost = async (req, res) => {
     // Verificar si ya existe una playlist para el usuario y si la URL del video es válida
     const existingPlaylist = !(await Playlist.findOne({user: req.body.user}));
     const verificarurl = verificarURLdeVideo(req.body.url);
+    const userexist = User.findById(req.body.user);
 
-    if (existingPlaylist && verificarurl) {
+    if (existingPlaylist && verificarurl && !!userexist) {
       // Asignar valores de req.body a las instancias
       playlist.user = req.body.user;
       video.name = req.body.name;
@@ -96,7 +98,36 @@ const playlistPost = async (req, res) => {
  */
 const playlistGet = (req, res) => {
   // Verificar si se proporciona un ID de lista de reproducción
-  if (req.query && req.query.id) {
+
+  if (req.query && req.query.iduser) {
+    User.findById(req.query.iduser)
+      .then((user) => {
+        console.log(user._id);
+        if (!user.state) {
+          res.status(404);
+          res.json({error: "User doesnt exist"});
+          return;
+        }
+        // Obtener la lista de reproducción por su ID
+        Playlist.find({state: true})
+          .then((playlists) => {
+            const playlist = playlists.filter(
+              (playlist) => playlist.user == req.query.iduser
+            );
+
+            res.status(200);
+            res.json(playlist);
+          })
+          .catch((err) => {
+            res.status(404);
+            res.json({error: "Playlist not found"});
+          });
+      })
+      .catch((err) => {
+        res.status(500);
+        res.json({error: "Internal server error"});
+      });
+  } else if (req.query && req.query.id) {
     // Obtener la lista de reproducción por su ID
     Playlist.findById(req.query.id)
       .then((playlist) => {

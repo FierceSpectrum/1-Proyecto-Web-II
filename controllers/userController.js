@@ -13,6 +13,36 @@ const validarEmail = (email) => {
  * @param {*} res
  */
 
+const userLogin = async (req, res) => {
+  // Obtener todos los usuarios activos
+  User.find({state: true})
+    .then((users) => {
+      const user = users.filter(
+        (user) =>
+          user.email === req.body.email && user.password === req.body.password
+      );
+
+      if (!user) {
+        res.status(404);
+        res.json({error: "User not found"});
+        return;
+      }
+      res.status(200);
+      res.json(user);
+    })
+    .catch((err) => {
+      res.status(500);
+      res.json({"Internal server error": err});
+    });
+};
+
+/**
+ * Creates a user
+ *
+ * @param {*} req
+ * @param {*} res
+ */
+
 const userPost = async (req, res) => {
   const user = new User();
 
@@ -78,7 +108,6 @@ const userPost = async (req, res) => {
   } catch (error) {
     res.status(400);
     res.json({error: error.message});
-    return;
   }
 };
 
@@ -278,6 +307,7 @@ const userDelete = (req, res) => {
 };
 
 module.exports = {
+  userLogin,
   userGet,
   userPost,
   userPatch,

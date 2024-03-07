@@ -9,6 +9,7 @@ const db = mongoose.connect("mongodb://127.0.0.1:27017/users", {
 });
 
 const {
+  userLogin,
   userPatch,
   userPost,
   userGet,
@@ -16,7 +17,7 @@ const {
 } = require("./controllers/userController.js");
 
 const {
-  playlistPatch,
+  // playlistPatch,
   playlistPost,
   playlistGet,
   playlistDelete,
@@ -36,6 +37,13 @@ const {
   accountDelete,
 } = require("./controllers/accountController.js");
 
+const {
+  avatarPatch,
+  avatarPost,
+  avatarGet,
+  avatarDelete,
+} = require("./controllers/avatarController.js");
+
 // parser for the request body (required for the POST and PUT methods)
 const bodyParser = require("body-parser");
 app.use(bodyParser.json());
@@ -52,6 +60,7 @@ app.use(
 // listen to the task request
 
 // user
+app.post("/api/usersLogin", userLogin);
 app.get("/api/users", userGet);
 app.post("/api/users", userPost);
 app.patch("/api/users", userPatch);
@@ -78,5 +87,12 @@ app.post("/api/accounts", accountPost);
 app.patch("/api/accounts", accountPatch);
 app.put("/api/accounts", accountPatch);
 app.delete("/api/accounts", accountDelete);
+
+// avatar
+app.get("/api/avatars", avatarGet);
+app.post("/api/avatars", avatarPost);
+app.patch("/api/avatars", avatarPatch);
+app.put("/api/avatars", avatarPatch);
+app.delete("/api/avatars", avatarDelete);
 
 app.listen(3001, () => console.log(`Example app listening on port 3001!`));
