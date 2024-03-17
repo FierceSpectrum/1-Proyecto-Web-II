@@ -87,7 +87,7 @@ const userPost = async (req, res) => {
     user.name = req.body.name;
     user.last_name = req.body.last_name;
     user.country = req.body.country;
-    user.birthdate = req.body.dateOnly;
+    user.birthdate = req.body.birthdate;
     user.accounts = 6;
     user.playlists = 1;
     user.state = true;
