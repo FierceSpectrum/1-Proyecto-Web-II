@@ -44,8 +44,7 @@ const accountPost = async (req, res) => {
       account.age = req.body.age;
       account.state = true;
 
-      user.accounts--;
-      user.account.push(account);
+      user.number_accounts--;
 
       // Guardar la cuenta y actualizar el usuario
       await account

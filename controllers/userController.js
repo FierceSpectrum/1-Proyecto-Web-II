@@ -88,8 +88,8 @@ const userPost = async (req, res) => {
     user.last_name = req.body.last_name;
     user.country = req.body.country;
     user.birthdate = req.body.birthdate;
-    user.accounts = 6;
-    user.playlists = 1;
+    user.number_accounts = 6;
+    user.number_playlists = 1;
     user.state = true;
 
     // Guardar usuario en la base de datos

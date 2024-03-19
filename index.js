@@ -37,12 +37,7 @@ const {
   accountDelete,
 } = require("./controllers/accountController.js");
 
-const {
-  avatarPatch,
-  avatarPost,
-  avatarGet,
-  avatarDelete,
-} = require("./controllers/avatarController.js");
+const { avatarCreat, avatarGet } = require("./controllers/avatarController.js");
 
 // parser for the request body (required for the POST and PUT methods)
 const bodyParser = require("body-parser");
@@ -89,10 +84,7 @@ app.put("/api/accounts", accountPatch);
 app.delete("/api/accounts", accountDelete);
 
 // avatar
+app.post("/api/Creatavatars", avatarCreat);
 app.get("/api/avatars", avatarGet);
-app.post("/api/avatars", avatarPost);
-app.patch("/api/avatars", avatarPatch);
-app.put("/api/avatars", avatarPatch);
-app.delete("/api/avatars", avatarDelete);
 
 app.listen(3001, () => console.log(`Example app listening on port 3001!`));

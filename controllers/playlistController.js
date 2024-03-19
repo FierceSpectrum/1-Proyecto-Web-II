@@ -35,17 +35,21 @@ const playlistPost = async (req, res) => {
     */
 
     // Verificar si ya existe una playlist para el usuario y si la URL del video es válida
-    const existingPlaylist = !(await Playlist.findOne({user: req.body.user}));
+    const existingPlaylist = !(await Playlist.findOne({ user: req.body.user }));
     const verificarurl = verificarURLdeVideo(req.body.url);
-    const userexist = User.findById(req.body.user);
+    const user = User.findById(req.body.user);
 
-    if (existingPlaylist && verificarurl && !!userexist) {
+
+    const number = user.accounts != 0;
+    if (existingPlaylist && verificarurl && !!user) {
       // Asignar valores de req.body a las instancias
       playlist.user = req.body.user;
       video.name = req.body.name;
       video.url = req.body.url;
       playlist.state = true;
       playlist.playlist = video;
+
+      user.number_playlists--;
 
       // Guardar la playlist y enviar la respuesta
       await playlist
@@ -71,22 +75,34 @@ const playlistPost = async (req, res) => {
               });
             }); 
           */
-
-          res.status(201); // CREATED
-          res.header({location: `/api/playlists/?id=${data.id}`});
-          res.json(data);
+          user
+            .save()
+            .then(() => {
+              res.status(201);
+              res.header({ location: `/api/playlists/?id=${data.id}` });
+              res.json(data);
+            })
+            .catch((err) => {
+              res.status(422);
+              res.json({
+                error: "There was an error saving the account",
+              });
+            });
+          // res.status(201); // CREATED
+          // res.header({ location: `/api/playlists/?id=${data.id}` });
+          // res.json(data);
         })
         .catch((err) => {
           res.status(500);
-          res.json({error: "There was an error saving the playlist"});
+          res.json({ error: "There was an error saving the playlist" });
         });
     } else {
       res.status(422);
-      res.json({error: "Invalid data provided for playlist"});
+      res.json({ error: "Invalid data provided for playlist" });
     }
   } catch (err) {
     res.status(500);
-    res.json({error: "There was an error saving the playlist"});
+    res.json({ error: "There was an error saving the playlist" });
   }
 };
 
@@ -105,11 +121,11 @@ const playlistGet = (req, res) => {
         console.log(user._id);
         if (!user.state) {
           res.status(404);
-          res.json({error: "User doesnt exist"});
+          res.json({ error: "User doesnt exist" });
           return;
         }
         // Obtener la lista de reproducción por su ID
-        Playlist.find({state: true})
+        Playlist.find({ state: true })
           .then((playlists) => {
             const playlist = playlists.filter(
               (playlist) => playlist.user == req.query.iduser
@@ -120,12 +136,12 @@ const playlistGet = (req, res) => {
           })
           .catch((err) => {
             res.status(404);
-            res.json({error: "Playlist not found"});
+            res.json({ error: "Playlist not found" });
           });
       })
       .catch((err) => {
         res.status(500);
-        res.json({error: "Internal server error"});
+        res.json({ error: "Internal server error" });
       });
   } else if (req.query && req.query.id) {
     // Obtener la lista de reproducción por su ID
@@ -134,7 +150,7 @@ const playlistGet = (req, res) => {
         // Verificar si la lista de reproducción está activa
         if (!playlist.state) {
           res.status(404);
-          res.json({error: "Playlist doesnt exist"});
+          res.json({ error: "Playlist doesnt exist" });
           return;
         }
         res.status(200);
@@ -142,18 +158,18 @@ const playlistGet = (req, res) => {
       })
       .catch((err) => {
         res.status(404);
-        res.json({error: "Playlist not found"});
+        res.json({ error: "Playlist not found" });
       });
   } else {
     // Obtener todas las listas de reproducción activas
-    Playlist.find({state: true})
+    Playlist.find({ state: true })
       .then((playlists) => {
         res.status(200);
         res.json(playlists);
       })
       .catch((err) => {
         res.status(500);
-        res.json({"Internal server error": err});
+        res.json({ "Internal server error": err });
       });
   }
 };
@@ -217,7 +233,7 @@ const playlistDelete = (req, res) => {
         // Verificar si la lista de reproducción está activa
         if (!playlist.state) {
           res.status(404);
-          res.json({error: "Playlist not found"});
+          res.json({ error: "Playlist not found" });
           return;
         }
         // Actualizar el estado de la lista de reproducción a inactivo
@@ -232,16 +248,16 @@ const playlistDelete = (req, res) => {
           })
           .catch((err) => {
             res.status(422);
-            res.json({error: "There was an error deleting the playlist"});
+            res.json({ error: "There was an error deleting the playlist" });
           });
       })
       .catch((err) => {
         res.status(404);
-        res.json({error: "Playlist not found"});
+        res.json({ error: "Playlist not found" });
       });
   } else {
     res.status(400);
-    res.json({error: "Playlist ID is required in query parameters"});
+    res.json({ error: "Playlist ID is required in query parameters" });
   }
 };
 
