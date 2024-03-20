@@ -18,7 +18,7 @@ const accountPost = async (req, res) => {
     // Verificar si el usuario existe y está activo
     if (!user || !user.state) {
       res.status(404);
-      res.json({error: "User not found"});
+      res.json({ error: "User not found" });
       return;
     }
 
@@ -54,7 +54,7 @@ const accountPost = async (req, res) => {
             .save()
             .then(() => {
               res.status(201);
-              res.header({location: `/api/accounts/?id=${data.id}`});
+              res.header({ location: `/api/accounts/?id=${data.id}` });
               res.json(data);
             })
             .catch((err) => {
@@ -66,15 +66,15 @@ const accountPost = async (req, res) => {
         })
         .catch((err) => {
           res.status(500);
-          res.json({error: "There was an error saving the account"});
+          res.json({ error: "There was an error saving the account" });
         });
     } else {
       res.status(422);
-      res.json({error: "No valid data provided for account"});
+      res.json({ error: "No valid data provided for account" });
     }
   } catch (error) {
     res.status(500);
-    res.json({error: "There was an error saving the account"});
+    res.json({ error: "There was an error saving the account" });
   }
 };
 
@@ -106,14 +106,14 @@ const accountGet = async (req, res) => {
         res.json({error: "Account doesnt exist"});
       }); */
 
-      Account.find({user: req.query.iduser, state: true})
+      Account.find({ user: req.query.iduser, state: true })
         .then((accounts) => {
           res.status(200);
           res.json(accounts);
         })
         .catch((err) => {
           res.status(404);
-          res.json({error: "Account not found"});
+          res.json({ error: "Account not found" });
         });
     } else {
       // Si se requiere una cuenta específica por ID
@@ -123,7 +123,7 @@ const accountGet = async (req, res) => {
             // Verificar si la cuenta  está activa
             if (!account.state) {
               res.status(404);
-              res.json({error: "Account not found"});
+              res.json({ error: "Account not found" });
               return;
             }
             res.status(200);
@@ -131,24 +131,24 @@ const accountGet = async (req, res) => {
           })
           .catch((err) => {
             res.status(404);
-            res.json({error: "Account not found"});
+            res.json({ error: "Account not found" });
           });
       } else {
         // Si no se proporciona ningún parámetro, devolver todas las cuentas activas
-        Account.find({state: true})
+        Account.find({ state: true })
           .then((data) => {
             res.status(200);
             res.json(data);
           })
           .catch((err) => {
             res.status(500);
-            res.json({error: "Internal server error"});
+            res.json({ error: "Internal server error" });
           });
       }
     }
   } catch (error) {
     res.status(500);
-    res.json({error: "Internal server error"});
+    res.json({ error: "Internal server error" });
   }
 };
 
@@ -160,24 +160,35 @@ const accountGet = async (req, res) => {
  */
 const accountPatch = (req, res) => {
   // Verificar si se proporciona un ID de cuenta
+  console.log(1);
   if (req.query && req.query.id) {
     // Buscar la cuenta por su ID
+    console.log(2);
     Account.findById(req.query.id)
       .then((account) => {
         // Verificar si la cuenta  está activa
+        console.log(3);
         if (!account.state) {
           res.status(404);
-          res.json({error: "Account not found"});
+          res.json({ error: "Account not found" });
           return;
         }
+        console.log(4);
         // Validar la longitud del PIN
-        const validpin = req.body.pin.toString().length == 6;
+        console.log(req.body.pin);
+        console.log("?");
+        console.log(req.body.pin.toString());
+        console.log("?");
+        console.log(req.body.pin.toString().length);
+        console.log("?");
+        const validpin = req.body.pin.toString().length === 6;
+        console.log("pin");
         if (!validpin) {
           res.status(422);
-          res.json({error: "Pin must be a 6-digit number"});
+          res.json({ error: "Pin must be a 6-digit number" });
           return;
         }
-
+        console.log(5);
         // Validar los campos requeridos
         try {
           // Iterar sobre los campos que deseas validar
@@ -190,10 +201,10 @@ const accountPatch = (req, res) => {
           });
         } catch (error) {
           res.status(400);
-          res.json({error: error.message});
+          res.json({ error: error.message });
           return;
         }
-
+        console.log(6);
         // Actualizar los campos de la cuenta
         account.full_name = req.body.full_name
           ? req.body.full_name
@@ -202,26 +213,29 @@ const accountPatch = (req, res) => {
         account.age = req.body.age ? req.body.age : account.age;
         account.pin = req.body.pin ? req.body.pin : account.pin;
 
+        console.log(7);
         // Guardar los cambios en la cuenta
         account
           .save()
           .then((data) => {
+            console.log(8);
             res.status(200); // OK
-            res.header({location: `/api/accounts/?id=${updatedAccount.id}`});
-            res.json(updatedAccount);
+            res.header({ location: `/api/accounts/?id=${data._id}` });
+            res.json(data);
           })
           .catch((err) => {
             res.status(422);
-            res.json({error: "There was an error saving the account"});
+            res.json({ error: "There was an error saving the account" });
           });
       })
       .catch(function (err) {
+        console.log("ya");
         res.status(404);
-        res.json({error: "Account not found"});
+        res.json({ error: "Account not found" });
       });
   } else {
     res.status(400);
-    res.json({error: "Account ID is required in query parameters"});
+    res.json({ error: "Account ID is required in query parameters" });
   }
 };
 
@@ -240,7 +254,7 @@ const accountDelete = (req, res) => {
         // Verificar si la cuenta está activa
         if (!account.state) {
           res.status(404);
-          res.json({error: "Account not found"});
+          res.json({ error: "Account not found" });
           return;
         }
         // Actualizar el estado de la cuenta a inactivo
@@ -255,16 +269,16 @@ const accountDelete = (req, res) => {
           })
           .catch((err) => {
             res.status(422);
-            res.json({error: "There was an error deleting the account"});
+            res.json({ error: "There was an error deleting the account" });
           });
       })
       .catch((err) => {
         res.status(404);
-        res.json({error: "Account not found"});
+        res.json({ error: "Account not found" });
       });
   } else {
     res.status(400);
-    res.json({error: "Account ID is required in query parameters"});
+    res.json({ error: "Account ID is required in query parameters" });
   }
 };
 
