@@ -28,18 +28,18 @@ const videoPost = async (req, res) => {
     // Verificar si se proporciona una URL de video
     const verificarurl = verificarURLdeVideo(req.body.url);
     if (!verificarurl) {
-      res.status(400);
-      res.json({error: "Invalid video URL"});
+      res.status(422);
+      res.json({ error: "Invalid video URL" });
       return;
     }
 
     // Encontrar la lista de reproducción del usuario por su ID
-    const playlist = await Playlist.findOne({user: req.body.user});
+    const playlist = await Playlist.findOne({ user: req.body.user });
 
     // Verificar si se encontró la lista de reproducción del usuario
     if (!playlist) {
       res.status(404);
-      res.json({error: "User playlist not found"});
+      res.json({ error: "User playlist not found" });
       return;
     }
 
@@ -63,11 +63,11 @@ const videoPost = async (req, res) => {
       })
       .catch((err) => {
         res.status(500);
-        res.json({error: "There was an error saving the video"});
+        res.json({ error: "There was an error saving the video" });
       });
   } catch (error) {
     res.status(500);
-    res.json({error: "There was an error saving the video"});
+    res.json({ error: "There was an error saving the video" });
   }
 };
 
@@ -87,7 +87,7 @@ const videoGet = (req, res) => {
         // Verificar si la lista de reproducción está activa
         if (!playlist.state) {
           res.status(404);
-          res.json({error: "Playlist not found"});
+          res.json({ error: "Playlist not found" });
           return;
         }
         // Buscar el video en la lista de reproducción por su ID
@@ -99,7 +99,7 @@ const videoGet = (req, res) => {
       })
       .catch((err) => {
         res.status(404);
-        res.json({error: "Playlist doesnt exist"});
+        res.json({ error: "Playlist doesnt exist" });
       });
   } else {
     // Verificar si se proporciona un ID de video
@@ -110,7 +110,7 @@ const videoGet = (req, res) => {
           // Verificar si la lista de reproducción está activa
           if (!playlist.state) {
             res.status(404);
-            res.json({error: "Playlist not found"});
+            res.json({ error: "Playlist not found" });
             return;
           }
           res.status(200);
@@ -118,11 +118,11 @@ const videoGet = (req, res) => {
         })
         .catch((err) => {
           res.status(404);
-          res.json({error: "Playlist not found"});
+          res.json({ error: "Playlist not found" });
         });
     } else {
       // Si no se proporciona un ID de lista de reproducción, devolver todos los videos de todas las listas de reproducción activas
-      Playlist.find({state: true})
+      Playlist.find({ state: true })
         .then((playlists) => {
           const playlistArray = playlists.map((playlist) => playlist.playlist);
           res.status(200);
@@ -130,7 +130,7 @@ const videoGet = (req, res) => {
         })
         .catch((err) => {
           res.status(500);
-          res.json({"Internal server error": err});
+          res.json({ "Internal server error": err });
         });
     }
   }
@@ -152,11 +152,20 @@ const videoPatch = async (req, res) => {
           // Verificar si la lista de reproducción está activa
           if (!playlist.state) {
             res.status(404);
-            res.json({error: "Playlist not found"});
+            res.json({ error: "Playlist not found" });
             return;
           }
 
           // Validar los campos requeridos
+          ["name", "url"].forEach((field) => {
+            if (!req.body[field] || req.body[field].trim() === "") {
+              throw new Error(
+                `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+              );
+            }
+          });
+
+          // Itera sobre los campos de la matriz y comprueba si están definidos en 'req.body'
           ["name", "url"].forEach((field) => {
             if (!req.body[field] || req.body[field].trim() === "") {
               throw new Error(
@@ -179,9 +188,9 @@ const videoPatch = async (req, res) => {
           video.url = req.body.url ? req.body.url : playlist.url;
 
           // Verificar si se encontró el video que se va a actualizar
-          if (!videoToUpdate) {
+          if (!video) {
             res.status(404);
-            res.json({error: "Video not found in playlist"});
+            res.json({ error: "Video not found in playlist" });
             return;
           }
           // Actualizar la lista de reproducción sin el video actualizado
@@ -206,20 +215,21 @@ const videoPatch = async (req, res) => {
             })
             .catch((err) => {
               res.status(500);
-              res.json({error: "There was an error updating the video"});
+              res.json({ error: "There was an error updating the video" });
             });
         })
         .catch((err) => {
+          console.log(err);
           res.status(404);
-          res.json({error: "Playlist doesnt exist"});
+          res.json({ error: "Playlist doesnt exist" });
         });
     } else {
       res.status(404);
-      res.json({error: "Playlist doesnt exist"});
+      res.json({ error: "Playlist doesnt exist" });
     }
   } catch (err) {
     res.status(500);
-    res.json({error: "There was an error updating the video"});
+    res.json({ error: "There was an error updating the video" });
   }
 };
 
@@ -239,10 +249,11 @@ const videoDelete = (req, res) => {
           // Verificar si la lista de reproducción existe y está activa
           if (!playlist.state) {
             res.status(404);
-            res.json({error: "Playlist not found"});
+            res.json({ error: "Playlist not found" });
             return;
           }
 
+          console.log(playlist.playlist);
           // Filtrar los videos de la lista de reproducción para excluir el video que se va a eliminar
           const videos = playlist.playlist.filter(
             (playlist) => playlist._id != req.query.idvideo
@@ -268,15 +279,15 @@ const videoDelete = (req, res) => {
         })
         .catch((err) => {
           res.status(500);
-          res.json({error: "There was an error deleting the video"});
+          res.json({ error: "There was an error deleting the video" });
         });
     } else {
       res.status(404);
-      res.json({error: "Playlist or video not found"});
+      res.json({ error: "Playlist or video not found" });
     }
   } catch (err) {
     res.status(500);
-    res.json({error: "There was an error deleting the video"});
+    res.json({ error: "There was an error deleting the video" });
     return;
   }
 };

@@ -27,7 +27,7 @@ const userLogin = async (req, res) => {
         res.json({error: "User not found"});
         return;
       }
-      res.status(200);
+      res.status(201);
       res.json(user);
     })
     .catch((err) => {
@@ -101,12 +101,12 @@ const userPost = async (req, res) => {
         res.json(data);
       })
       .catch((err) => {
-        res.status(400);
+        res.status(500);
         console.log("error while saving the user", err);
         res.json({error: error.message});
       });
   } catch (error) {
-    res.status(400);
+    res.status(404);
     res.json({error: error.message});
   }
 };

@@ -58,7 +58,7 @@ const accountPost = async (req, res) => {
               res.json(data);
             })
             .catch((err) => {
-              res.status(422);
+              res.status(500);
               res.json({
                 error: "There was an error saving the account",
               });
@@ -224,7 +224,7 @@ const accountPatch = (req, res) => {
             res.json(data);
           })
           .catch((err) => {
-            res.status(422);
+            res.status(500);
             res.json({ error: "There was an error saving the account" });
           });
       })
@@ -261,16 +261,27 @@ const accountDelete = (req, res) => {
         account.state = false;
 
         // Guardar los cambios en la cuenta
-        account
-          .save()
-          .then(() => {
-            res.status(204); //No content
-            res.json({});
-          })
-          .catch((err) => {
-            res.status(422);
-            res.json({ error: "There was an error deleting the account" });
-          });
+
+        const user = User.findById(account.user);
+
+        if (!user || !user.state) {
+          res.status(404);
+          res.json({ error: "User not found" });
+          return;
+        }
+        user.number_accounts++;
+        user.save().then(() => {
+          account
+            .save()
+            .then(() => {
+              res.status(200); //No content
+              res.json({});
+            })
+            .catch((err) => {
+              res.status(422);
+              res.json({ error: "There was an error deleting the account" });
+            });
+        });
       })
       .catch((err) => {
         res.status(404);

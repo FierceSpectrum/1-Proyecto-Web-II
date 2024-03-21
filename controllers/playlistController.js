@@ -37,10 +37,9 @@ const playlistPost = async (req, res) => {
     // Verificar si ya existe una playlist para el usuario y si la URL del video es válida
     const existingPlaylist = !(await Playlist.findOne({ user: req.body.user }));
     const verificarurl = verificarURLdeVideo(req.body.url);
-    const user = User.findById(req.body.user);
+    const user = await User.findById(req.body.user);
 
-
-    const number = user.accounts != 0;
+    console.log(user);
     if (existingPlaylist && verificarurl && !!user) {
       // Asignar valores de req.body a las instancias
       playlist.user = req.body.user;
@@ -75,15 +74,17 @@ const playlistPost = async (req, res) => {
               });
             }); 
           */
+
           user
             .save()
             .then(() => {
               res.status(201);
               res.header({ location: `/api/playlists/?id=${data.id}` });
               res.json(data);
+
             })
             .catch((err) => {
-              res.status(422);
+              res.status(500);
               res.json({
                 error: "There was an error saving the account",
               });
@@ -102,6 +103,7 @@ const playlistPost = async (req, res) => {
     }
   } catch (err) {
     res.status(500);
+    console.log('?');
     res.json({ error: "There was an error saving the playlist" });
   }
 };
@@ -118,7 +120,6 @@ const playlistGet = (req, res) => {
   if (req.query && req.query.iduser) {
     User.findById(req.query.iduser)
       .then((user) => {
-        console.log(user._id);
         if (!user.state) {
           res.status(404);
           res.json({ error: "User doesnt exist" });
