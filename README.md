@@ -114,7 +114,7 @@ El servidor estará corriendo en `http://localhost:3001`.
 
 ## Estado del Proyecto
 
-Este proyecto fue creado en el 2023, durante el segundo cuatrimestre del año, como una práctica para aprender los fundamentos del desarrollo web. Actualmente, se están realizando algunas actualizaciones para mejorar la estructura del código y la organización del repositorio en GitHub.
+Este proyecto fue creado durante el primer cuatrimestre del año 2024, como una práctica para aprender los fundamentos del desarrollo web. Actualmente, se están realizando algunas actualizaciones para mejorar la estructura del código y la organización del repositorio en GitHub.
 
 ## Licencia
 
